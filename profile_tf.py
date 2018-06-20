@@ -32,9 +32,17 @@ This module is GPLv3 licensed.
 
 """
 
+import tensorflow as tf
+import numpy as np
+
 def get_a_simple_model():
     input = tf.placeholder(tf.float32, [1, 32, 32, 3])
-    # Construct a small graph here
+    conv1 = tf.layers.conv2d(inputs=input, filters=32,
+                kernel_size=[3, 3], activation=tf.nn.relu)
+    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
+    return input, pool1
+
+
     # Return the inputs and outputs
 
 def profile_flops():
