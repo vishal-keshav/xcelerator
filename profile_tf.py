@@ -41,6 +41,10 @@ from tensorflow.python.framework import graph_util
 import numpy as np
 import os
 
+import os.path as op
+from adb import adb_commands
+from adb import sign_m2crypto
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 def get_a_simple_model():
@@ -133,13 +137,24 @@ def create_tflite():
         with open("model.tflite", "wb") as f:
             f.write(tflite_model)
 
+def adb_test():
+    print("Connecting to ADB.")
+    # KitKat+ devices require authentication
+    signer = sign_m2crypto.M2CryptoSigner(op.expanduser('~/.android/adbkey'))
+    # Connect to the device
+    device = adb_commands.AdbCommands()
+    device.ConnectDevice(rsa_keys=[signer])
+    # Now we can use Shell, Pull, Push, etc!
+    for i in range(10):
+        print(device.Shell('echo %d' % i))
 
 def main():
     print("............Testing the profiler module................")
-    profile_flops()
-    profile_param()
-    print_nodes()
-    create_tflite()
+    #profile_flops()
+    #profile_param()
+    #print_nodes()
+    #create_tflite()
+    adb_test()
     return
 
 if __name__ == "__main__":
