@@ -37,17 +37,19 @@ This module is GPLv3 licensed.
 """
 
 import tensorflow as tf
+from tensorflow.python.framework import graph_util
 import numpy as np
 import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 def get_a_simple_model():
-    input = tf.placeholder(tf.float32, [1, 32, 32, 3])
+    input = tf.placeholder(tf.float32, [1, 32, 32, 3], name = 'input_tensor')
     conv1 = tf.layers.conv2d(inputs=input, filters=32,
                 kernel_size=[3, 3], activation=tf.nn.relu)
     pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
-    return input, pool1
+    output = tf.identity(pool1, name="output_tensor")
+    return input, output
 
 # Parameters
 def profile_param():
@@ -103,12 +105,41 @@ def profile_flops():
                                     options=profile_op)
     print('FLOPS:', flops.total_float_ops)
 
+"""
+For profilling the model, we choose to create an untrained version of model
+that we save as optimized tflite file format.
+Once saved on disk, we measure the disk space taken by it.
+Further, the automatic script pushes a the model with tf lite benchmark
+into the connected device (Android: /data/) and retrives the execution
+time (mean and variance of 100 runs), by generating a dummy input to be feeded.
+
+Option to execute on desktop is even simpler, for which options will be passed.
+"""
+
+def create_tflite():
+    tf.reset_default_graph()
+    input, output = get_a_simple_model()
+    graph = tf.get_default_graph()
+    with tf.Session(graph=graph) as sess:
+        sess.run(tf.global_variables_initializer())
+        # Here, we could have restored the checkpoint and trained weights,
+        # but that is not the intention
+        graph_def = graph.as_graph_def()
+        # Freeze the graph
+        output_graph = graph_util.convert_variables_to_constants(sess, graph_def, ["output_tensor"])
+        # Convert the model to tflite file directly.
+        tflite_model = tf.contrib.lite.toco_convert(
+                output_graph, input_tensors=[input], output_tensors=[output])
+        with open("model.tflite", "wb") as f:
+            f.write(tflite_model)
+
 
 def main():
     print("............Testing the profiler module................")
     profile_flops()
     profile_param()
     print_nodes()
+    create_tflite()
     return
 
 if __name__ == "__main__":
