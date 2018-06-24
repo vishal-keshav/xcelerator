@@ -137,6 +137,25 @@ def create_tflite():
         with open("model.tflite", "wb") as f:
             f.write(tflite_model)
 
+def profile_file_size():
+    file_size = os.path.getsize("model.tflite")
+    print("FILE SIZE IN BYTES: ", file_size)
+
+# Run adb kill-server if pyadb gives some problems
+def push_tflite():
+    print("CONNECTING TO ADB....")
+    signer = sign_m2crypto.M2CryptoSigner(op.expanduser('~/.android/adbkey'))
+    device = adb_commands.AdbCommands()
+    device.ConnectDevice(rsa_keys=[signer])
+    # Check if tflite file is present on disk, then push it into the device
+    if op.exists("model.tflite"):
+        print(device.Shell('push model.tflite /data/local/tmp/'))
+        print("FILE PUSHED")
+    else:
+        print("FILE NOT PRESENT")
+
+
+
 def adb_test():
     print("Connecting to ADB.")
     # KitKat+ devices require authentication
@@ -150,11 +169,12 @@ def adb_test():
 
 def main():
     print("............Testing the profiler module................")
-    #profile_flops()
-    #profile_param()
-    #print_nodes()
-    #create_tflite()
-    adb_test()
+    profile_flops()
+    profile_param()
+    print_nodes()
+    create_tflite()
+    profile_file_size()
+    push_tflite()
     return
 
 if __name__ == "__main__":
