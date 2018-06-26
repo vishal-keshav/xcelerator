@@ -157,7 +157,7 @@ def push_tflite():
     else:
         print("FILE NOT PRESENT")
 
-def execute_model():
+def execute_tflite():
     print('EXECUTING')
     # Should connect again, unnecceary overhead
     signer = sign_m2crypto.M2CryptoSigner(op.expanduser('~/.android/adbkey'))
@@ -185,15 +185,19 @@ def adb_test():
     for i in range(10):
         print(device.Shell('echo %d' % i))
 
+def profile_mobile_exec():
+    create_tflite()
+    push_tflite()
+    execute_tflite()
+
+
 def main():
     print("............Testing the profiler module................")
     profile_flops()
     profile_param()
     print_nodes()
-    create_tflite()
     profile_file_size()
-    push_tflite()
-    execute_model()
+    profile_mobile_exec()
     return
 
 if __name__ == "__main__":
