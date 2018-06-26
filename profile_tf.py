@@ -168,7 +168,9 @@ def execute_model():
     image_file = "/data/local/tmp/grace_hopper.bmp"
     label_file = "/data/local/tmp/labels.txt"
     model_file = "/data/local/tmp/mobilenet_v1_1.0_224.tflite"
-    exec_command = "." + benchmark_file + " -c 100 -v 1 -i " + image_file + " -l " + label_file + " -m " + model_file
+    exec_command = "." + benchmark_file + " -c 100 -v 1 -i " +  \
+                    image_file + " -l " + label_file + " -m " + \
+                    model_file + " -t 1"
     print(exec_command)
     print(device.Shell(exec_command, timeout_ms=100000))
 
