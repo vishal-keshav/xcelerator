@@ -42,6 +42,7 @@ import numpy as np
 import os
 
 import os.path as op
+import adb
 from adb import adb_commands
 from adb import sign_m2crypto
 
@@ -148,8 +149,10 @@ def push_tflite():
     device = adb_commands.AdbCommands()
     device.ConnectDevice(rsa_keys=[signer])
     # Check if tflite file is present on disk, then push it into the device
-    if op.exists("model.tflite"):
-        print(device.Shell('push model.tflite /data/local/tmp/'))
+    destination_dir = '/data/local/tmp/model.tflite'
+    file_name = 'model.tflite'
+    if op.exists(file_name):
+        print(device.Push(file_name, destination_dir))
         print("FILE PUSHED")
     else:
         print("FILE NOT PRESENT")
