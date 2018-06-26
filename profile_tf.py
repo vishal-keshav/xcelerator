@@ -157,7 +157,20 @@ def push_tflite():
     else:
         print("FILE NOT PRESENT")
 
-
+def execute_model():
+    print('EXECUTING')
+    # Should connect again, unnecceary overhead
+    signer = sign_m2crypto.M2CryptoSigner(op.expanduser('~/.android/adbkey'))
+    device = adb_commands.AdbCommands()
+    device.ConnectDevice(rsa_keys=[signer])
+    # More checks are required, but for now, its okay!
+    benchmark_file = "/data/local/tmp/label_image"
+    image_file = "/data/local/tmp/grace_hopper.bmp"
+    label_file = "/data/local/tmp/labels.txt"
+    model_file = "/data/local/tmp/mobilenet_v1_1.0_224.tflite"
+    exec_command = "." + benchmark_file + " -c 100 -v 1 -i " + image_file + " -l " + label_file + " -m " + model_file
+    print(exec_command)
+    print(device.Shell(exec_command, timeout_ms=100000))
 
 def adb_test():
     print("Connecting to ADB.")
@@ -178,6 +191,7 @@ def main():
     create_tflite()
     profile_file_size()
     push_tflite()
+    execute_model()
     return
 
 if __name__ == "__main__":
