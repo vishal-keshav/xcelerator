@@ -40,6 +40,7 @@ import tensorflow as tf
 from tensorflow.python.framework import graph_util
 import numpy as np
 import os
+import csv
 
 import os.path as op
 import adb
@@ -184,6 +185,18 @@ def adb_test():
     # Now we can use Shell, Pull, Push, etc!
     for i in range(10):
         print(device.Shell('echo %d' % i))
+
+def write_data_to_csv(data, feature_map, file_name):
+    csv_file = open(file_name+'.csv', "w")
+    with csv_file:
+    csv.write(feature_map)
+    for key in data.keys():
+    	feature_value = data[key]
+        feature_list = ','.join(map(str, feature_value))
+    	row = key + "," + feature_list + "\n"
+    	csv_file.write(row)
+
+print("Writing complete")
 
 def profile_mobile_exec():
     create_tflite()
