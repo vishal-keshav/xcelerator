@@ -175,6 +175,11 @@ def execute_tflite():
     print(exec_command)
     print(device.Shell(exec_command, timeout_ms=100000))
 
+def profile_mobile_exec():
+    create_tflite()
+    push_tflite()
+    execute_tflite()
+
 def adb_test():
     print("Connecting to ADB.")
     # KitKat+ devices require authentication
@@ -186,31 +191,36 @@ def adb_test():
     for i in range(10):
         print(device.Shell('echo %d' % i))
 
-def write_data_to_csv(data, feature_map, file_name):
-    csv_file = open(file_name+'.csv', "w")
-    with csv_file:
-    csv.write(feature_map)
-    for key in data.keys():
-    	feature_value = data[key]
-        feature_list = ','.join(map(str, feature_value))
-    	row = key + "," + feature_list + "\n"
-    	csv_file.write(row)
+"""
+Utility for automating:
+1. Micro and marcro architectural hyper-parameter exploration
+2. Reporting utility
+3. Math funtionalities for re-verification of correctness of the results
+"""
 
-print("Writing complete")
+def report_test():
+    fields = ['feature_name', 'mean', 'std']
+    f1 = [45, 0.2]
+    f2 = [12, 1]
+    data = []
+    data.append({fields[0]: 'feature1', fields[1]: f1[0], fields[2]: f1[1]})
+    data.append({fields[0]: 'feature2', fields[1]: f2[0], fields[2]: f2[1]})
+    write_data_to_csv(data, fields, "sample_file")
 
-def profile_mobile_exec():
-    create_tflite()
-    push_tflite()
-    execute_tflite()
-
+def write_data_to_csv(data, fields, file_name):
+    with open(file_name+'.csv', 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(data)
 
 def main():
     print("............Testing the profiler module................")
-    profile_flops()
-    profile_param()
-    print_nodes()
-    profile_file_size()
-    profile_mobile_exec()
+    #profile_flops()
+    #profile_param()
+    #print_nodes()
+    #profile_file_size()
+    #profile_mobile_exec()
+    report_test()
     return
 
 if __name__ == "__main__":
