@@ -47,6 +47,69 @@ start becoming more interesting
 """
 
 import os
+import profile_tf as profiler
+
+def update_model_stats(model):
+    input = model['input']
+    output = model['output']
+
+
+"""
+We dont save graph, and assume default graph is
+all we have
+"""
+
+class model_generator:
+    """
+    options is of dictionary type, param has to be
+    one of the key.
+    """
+    def __init__(self, options, name = 'default'):
+        self.name = name
+        self.nr_param = len(options[param])
+        self.init_param = options[param]
+        self.param = options[param]
+        self.others = options
+        # do something with other options here
+        self.model = generate_model(self.init_param)
+        self.model_stats = update_model_state()
+
+    def set_param(self, param):
+        # do param range checks
+        # do checks with respect to current setting
+        self.param = param
+
+    def get_param(self):
+        return self.param
+
+    def generate_model(self):
+        # logic to generate model basef on self.param
+        # checks if it is in correct range
+        tf.reset_default_graph()
+        self.model = generate_model(self.param)
+        self.model_stats = update_model_stats(self.model)
+
+    def update_model_state():
+        input = self.model['input']
+        output = self.model['output']
+        num_param = profiler.profile_param(tf.get_default_graph())
+        num_flops = profiler.profile_flops(tf.get_default_graph())
+        #file_size = profiler.profile_size(tf.get_default_graph())
+        self.model_stats = {"param": num_param, "flops": num_flops}
+
+    def get_model(self):
+        return self.model
+
+    def set_and_get_model(self, param):
+        # do param range checks
+        # do checks with respect to current setting
+        self.param = param
+        self.model = generate_model()
+        return self.model
+
+    def get_model_stats(self):
+        return self.model_stats
+
 def main():
     pass
 
