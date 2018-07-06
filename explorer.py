@@ -114,8 +114,8 @@ class model_generator:
 
     def set_and_stats(self, param):
         self.param = param
-        self.model = generate_model()
-        return get_model_stats()
+        self.model = self.generate_model()
+        return self.get_model_stats()
 
 def main():
     def sample_model_creator(param):
@@ -135,10 +135,18 @@ def main():
     mg = model_generator(name = 'sample')
     mg.set_creator(sample_model_creator)
     mg.set_stats_updater(sample_stat_updater)
-    sample_param = {'H': 32, 'W': 32, 'D': 3, 'F': 32}
-    mg.set_param(sample_param)
-    mg.generate_model()
-    print(mg.get_model_stats())
+
+    param_list = []
+    stat_list = []
+    for h in [8, 16, 32]:
+        for w in [8, 16, 32]:
+            for f in [16, 32]:
+                temp_param = {'H': h, 'W': w, 'D': 3, 'F': f}
+                param_list.append(temp_param)
+                stat_list.append(mg.set_and_stats(temp_param))
+    for i in range(len(param_list)):
+        print(param_list[i])
+        print(stat_list[i])
 
 
 if __name__ == "__main__":

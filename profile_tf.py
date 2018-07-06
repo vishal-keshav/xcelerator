@@ -58,7 +58,7 @@ def get_a_simple_model():
     return input, output
 
 # Parameters
-def profile_param(graph):
+def profile_param(graph, verbos = True):
     """
     Profile with metadata
     Takes in a graph, and calculate
@@ -97,7 +97,7 @@ def print_nodes():
     print('TOTAL DIMS OF TRAINABLE VARIABLES', total_dims)
 
 # Floating point operations
-def profile_flops(graph):
+def profile_flops(graph, verbose = True):
     """
     Profiler with metadata
     Takes in a graph, and calculate
