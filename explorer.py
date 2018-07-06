@@ -45,14 +45,9 @@ thing with efficiency of an architected model. Fixing this
 solves the problem, but if it becomes a variable, things
 start becoming more interesting
 """
-
+import tensorflow as tf
 import os
 import profile_tf as profiler
-
-def update_model_stats(model):
-    input = model['input']
-    output = model['output']
-
 
 """
 We dont save graph, and assume default graph is
@@ -64,15 +59,31 @@ class model_generator:
     options is of dictionary type, param has to be
     one of the key.
     """
-    def __init__(self, options, name = 'default'):
+    def __init__(self, options = None, name = 'default'):
         self.name = name
-        self.nr_param = len(options[param])
-        self.init_param = options[param]
-        self.param = options[param]
-        self.others = options
-        # do something with other options here
-        self.model = generate_model(self.init_param)
-        self.model_stats = update_model_state()
+        if options != None:
+            self.nr_param = len(options['parameters'])
+            self.init_param = options['parameters']
+            self.model_creator = options['model_creator']
+            self.update_stats = options['stat_updater']
+            self.param = options[param]
+            self.others = options
+            # do something with other options here
+            self.model = self.model_creator(self.init_param)
+            self.model_stats = self.update_stats()
+        else:
+            self.nr_param = -1
+            self.init_param = None
+            self.model_creator = None
+            self.param = None
+            self.model = None
+            self.model_stats = None
+
+    def set_creator(self, fn):
+        self.model_creator = fn
+
+    def set_stats_updater(self, fn):
+        self.update_stats = fn
 
     def set_param(self, param):
         # do param range checks
@@ -86,16 +97,7 @@ class model_generator:
         # logic to generate model basef on self.param
         # checks if it is in correct range
         tf.reset_default_graph()
-        self.model = generate_model(self.param)
-        self.model_stats = update_model_stats(self.model)
-
-    def update_model_state():
-        input = self.model['input']
-        output = self.model['output']
-        num_param = profiler.profile_param(tf.get_default_graph())
-        num_flops = profiler.profile_flops(tf.get_default_graph())
-        #file_size = profiler.profile_size(tf.get_default_graph())
-        self.model_stats = {"param": num_param, "flops": num_flops}
+        self.model = self.model_creator(self.param)
 
     def get_model(self):
         return self.model
@@ -108,10 +110,35 @@ class model_generator:
         return self.model
 
     def get_model_stats(self):
-        return self.model_stats
+        return self.update_stats()
+
+    def set_and_stats(self, param):
+        self.param = param
+        self.model = generate_model()
+        return get_model_stats()
 
 def main():
-    pass
+    def sample_model_creator(param):
+        input = tf.placeholder(tf.float32, [1, param['H'], param['W'], param['D']],
+                    name = 'input_tensor')
+        conv1 = tf.layers.conv2d(inputs=input, filters=param['F'],
+                    kernel_size=[3, 3], activation=tf.nn.relu)
+        pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
+        output = tf.identity(pool1, name="output_tensor")
+        return {'input': input, 'output': output}
+
+    def sample_stat_updater():
+        num_param = profiler.profile_param(tf.get_default_graph())
+        num_flops = profiler.profile_flops(tf.get_default_graph())
+        return {"param": num_param, "flops": num_flops}
+
+    mg = model_generator(name = 'sample')
+    mg.set_creator(sample_model_creator)
+    mg.set_stats_updater(sample_stat_updater)
+    sample_param = {'H': 32, 'W': 32, 'D': 3, 'F': 32}
+    mg.set_param(sample_param)
+    mg.generate_model()
+    print(mg.get_model_stats())
 
 
 if __name__ == "__main__":

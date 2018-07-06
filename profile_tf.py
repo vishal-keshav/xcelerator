@@ -58,18 +58,17 @@ def get_a_simple_model():
     return input, output
 
 # Parameters
-def profile_param():
+def profile_param(graph):
     """
     Profile with metadata
+    Takes in a graph, and calculate
+    total parameters present in that graph
     """
-    tf.reset_default_graph()
     run_meta = tf.RunMetadata()
-    input, output = get_a_simple_model()
-
     profile_op = tf.profiler.ProfileOptionBuilder.trainable_variables_parameter()
-    params = tf.profiler.profile(tf.get_default_graph(), run_meta=run_meta, cmd='op',
+    params = tf.profiler.profile(graph, run_meta=run_meta, cmd='op',
                                     options=profile_op)
-    print('PARAMS: ', params.total_parameters)
+    return params.total_parameters
 
 
 def print_nodes():
@@ -98,18 +97,17 @@ def print_nodes():
     print('TOTAL DIMS OF TRAINABLE VARIABLES', total_dims)
 
 # Floating point operations
-def profile_flops():
+def profile_flops(graph):
     """
     Profiler with metadata
+    Takes in a graph, and calculate
+    total number of floating point ops in that
     """
-    tf.reset_default_graph()
     run_meta = tf.RunMetadata()
-    input, output = get_a_simple_model()
-
     profile_op = tf.profiler.ProfileOptionBuilder.float_operation()
-    flops = tf.profiler.profile(tf.get_default_graph(), run_meta=run_meta, cmd='op',
+    flops = tf.profiler.profile(graph, run_meta=run_meta, cmd='op',
                                     options=profile_op)
-    print('FLOPS:', flops.total_float_ops)
+    return flops.total_float_ops
 
 """
 For profilling the model, we choose to create an untrained version of model
@@ -215,12 +213,14 @@ def write_data_to_csv(data, fields, file_name):
 
 def main():
     print("............Testing the profiler module................")
-    #profile_flops()
-    #profile_param()
+    input, output = get_a_simple_model()
+    graph = tf.get_default_graph()
+    print('FLOPS: ', profile_flops(graph))
+    print('PARAM: ', profile_param(graph))
     #print_nodes()
     #profile_file_size()
     #profile_mobile_exec()
-    report_test()
+    #report_test()
     return
 
 if __name__ == "__main__":
