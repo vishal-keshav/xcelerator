@@ -14,6 +14,10 @@ import numpy as np
 import os
 import csv
 
+def format_adb_msg(msg):
+    pass
+
+
 def write_data_to_csv(data, fields, file_name):
     with open(file_name+'.csv', 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fields)
