@@ -164,7 +164,6 @@ def push_tflite(name, device, verbose = True):
     if op.exists(file_name):
         console_msg = device.Push(file_name, destination_dir)
         if verbose == True:
-            print(console_msg)
             print("FILE PUSHED")
     else:
         if verbose == True:
@@ -187,18 +186,17 @@ def execute_tflite(name, device, nr_threads = 1, verbose = True):
         print(console_msg)
     return console_msg
 
-def profile_mobile_exec(name, model, graph, verbose = True):
-    adb_device = connect_to_device()
-    create_tflite(name, model, graph)
+def profile_mobile_exec(name, model, graph, nr_threads = 1, verbose = True):
+    adb_device = connect_to_device(verbose)
+    create_tflite(name, model, graph, verbose)
     if adb_device != None:
-        push_tflite(name, adb_device)
-        console_out = execute_tflite(name, adb_device, nr_threads = 1)
+        push_tflite(name, adb_device, verbose)
+        console_out = execute_tflite(name, adb_device, nr_threads, verbose)
     else:
         if verbose == True:
             print("Unable to connect to device.")
         console_out = None
-    #formated_out = report.format_adb_msg(console_out)
-    formated_out = {'exec_time': -1}
+    formated_out = report.format_adb_msg(console_out)
     if verbose == True:
         print(console_out)
         print(formated_out['exec_time'])
@@ -223,7 +221,8 @@ def main():
     #print('FLOPS: ', profile_flops(graph))
     #print('PARAM: ', profile_param(graph))
     #nr_dims = print_nodes(graph)
-    out = profile_mobile_exec('test_model', model, graph)
+    out = profile_mobile_exec('test_model', model, graph, 1, verbose = False)
+    print('total execution time in milliseconds is ', out['exec_time'])
     #sz = profile_file_size('test_model')
     return
 

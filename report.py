@@ -15,8 +15,17 @@ import os
 import csv
 
 def format_adb_msg(msg):
-    pass
-
+    # This is most basic version, searches for
+    # only average time: xx.xxxx ms
+    tag = "time:"
+    for line in msg.splitlines():
+        if tag in line:
+            matched_line = line
+            break
+    # Extract the xx.xxxx part after "time:"
+    words = matched_line.split()
+    exec_time = float(words[2])
+    return {'exec_time': exec_time}
 
 def write_data_to_csv(data, fields, file_name):
     with open(file_name+'.csv', 'w') as csvfile:
