@@ -43,7 +43,9 @@ Processing relationships: The frequency and temperature
 (as controlled by operating system kernel) has to do many
 thing with efficiency of an architected model. Fixing this
 solves the problem, but if it becomes a variable, things
-start becoming more interesting
+start becoming more interesting.
+
+This module is GPLv3 licensed.
 """
 import tensorflow as tf
 import os

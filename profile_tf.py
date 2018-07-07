@@ -40,7 +40,6 @@ import tensorflow as tf
 from tensorflow.python.framework import graph_util
 import numpy as np
 import os
-import csv
 
 import os.path as op
 import adb
@@ -189,27 +188,6 @@ def adb_test():
     for i in range(10):
         print(device.Shell('echo %d' % i))
 
-"""
-Utility for automating:
-1. Micro and marcro architectural hyper-parameter exploration
-2. Reporting utility
-3. Math funtionalities for re-verification of correctness of the results
-"""
-
-def report_test():
-    fields = ['feature_name', 'mean', 'std']
-    f1 = [45, 0.2]
-    f2 = [12, 1]
-    data = []
-    data.append({fields[0]: 'feature1', fields[1]: f1[0], fields[2]: f1[1]})
-    data.append({fields[0]: 'feature2', fields[1]: f2[0], fields[2]: f2[1]})
-    write_data_to_csv(data, fields, "sample_file")
-
-def write_data_to_csv(data, fields, file_name):
-    with open(file_name+'.csv', 'w') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fields)
-        writer.writeheader()
-        writer.writerows(data)
 
 def main():
     print("............Testing the profiler module................")
@@ -220,7 +198,6 @@ def main():
     #print_nodes()
     #profile_file_size()
     #profile_mobile_exec()
-    #report_test()
     return
 
 if __name__ == "__main__":
