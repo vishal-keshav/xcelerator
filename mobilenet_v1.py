@@ -29,6 +29,7 @@ This module is GPLv3 licensed.
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
+import profile_tf as profiler
 
 class Model:
     def __init__(self, name):
@@ -39,11 +40,26 @@ class Model:
         else:
             self.name = None
             print('no such model present in this module')
+        self.model = None
 
     def model_creator(self, param):
         if self.name == 'mobilenet_v1':
-            model = self.init_mobilenet_v1(param)
-            return model
+            self.model = self.init_mobilenet_v1(param)
+            return self.model
+
+    # Stat updator returns the model exec time and other visible param
+    # important for deployment
+    def stat_updater(self):
+        num_param = profiler.profile_param(tf.get_default_graph())
+        num_flops = profiler.profile_flops(tf.get_default_graph())
+        single_thread = profiler.profile_mobile_exec("mobilenet_v1", self.model,
+                        tf.get_default_graph(), nr_threads = 1, verbose = False)
+        multi_thread = profiler.profile_mobile_exec("mobilenet_v1", self.model,
+                        tf.get_default_graph(), nr_threads = 8, verbose = False)
+        file_size = profiler.profile_file_size("mobilenet_v1", verbose = False)
+        return {"param": num_param, "flops": num_flops,
+                "single_thread": single_thread, "multi_thread": multi_thread,
+                "file_size": file_size}
 
     # Defenition of micro-architecture (depth-wise seperable conv)
     # Defined in terms of params width and depth multiplier
@@ -57,11 +73,11 @@ class Model:
         depthwise_conv = slim.separable_convolution2d(input, num_outputs=None,
                             stride=stride, depth_multiplier=depth_multiplier,
                             kernel_size=[3, 3], scope= sc+'/depthwise_conv')
-        bn = slim.batch_norm(depthwise_conv, scope=sc+'/dw_batch_norm')
-        pointwise_conv = slim.convolution2d(bn, nr_filters, kernel_size=[1, 1],
+        #bn = slim.batch_norm(depthwise_conv, scope=sc+'/dw_batch_norm')
+        pointwise_conv = slim.convolution2d(depthwise_conv, nr_filters, kernel_size=[1, 1],
                             scope=sc+'/pointwise_conv')
-        bn = slim.batch_norm(pointwise_conv, scope=sc+'/pw_batch_norm')
-        return bn
+        #bn = slim.batch_norm(pointwise_conv, scope=sc+'/pw_batch_norm')
+        return pointwise_conv
 
     # Defenition of macro-architecture
     # Defined in terms of all hyper-parameters namely
@@ -77,8 +93,8 @@ class Model:
         input = tf.placeholder(tf.float32, [1, H_W, H_W, 3],name='input_tensor')
         layer_1_conv = slim.convolution2d(input, round(32 * width_multiplier),
                         [3, 3], stride=2, padding='SAME', scope='conv_1')
-        layer_1_bn = slim.batch_norm(layer_1_conv, scope='conv_1/batch_norm')
-        layer_2_dw = self.dw_separable(layer_1_bn, 64, width_multiplier,
+        #layer_1_bn = slim.batch_norm(layer_1_conv, scope='conv_1/batch_norm')
+        layer_2_dw = self.dw_separable(layer_1_conv, 64, width_multiplier,
                             depth_multiplier, sc='conv_ds_2')
         layer_3_dw = self.dw_separable(layer_2_dw, 128, width_multiplier,
                             depth_multiplier, downsample=True, sc='conv_ds_3')

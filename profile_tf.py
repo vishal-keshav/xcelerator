@@ -139,7 +139,7 @@ def create_tflite(name, model, graph, verbose = True):
             print(name + ".tflite created")
 
 def profile_file_size(name, verbose = True):
-    file_size = os.path.getsize("name" + ".tflite")
+    file_size = os.path.getsize(name + ".tflite")
     if verbose == True:
         print('FILE_SIZE_IN_BYTES: ' + file_size)
     return file_size

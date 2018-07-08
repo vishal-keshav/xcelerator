@@ -51,6 +51,7 @@ import tensorflow as tf
 import os
 import profile_tf as profiler
 import mobilenet_v1 as mobile
+import report as report
 
 """
 We dont save graph, and assume default graph is
@@ -123,15 +124,10 @@ class model_generator:
 def main():
 
     mobilenet_creator = mobile.Model("mobilenet_v1")
+    mg = model_generator(name = 'mobilenet_profile')
 
-    def sample_stat_updater():
-        num_param = profiler.profile_param(tf.get_default_graph())
-        num_flops = profiler.profile_flops(tf.get_default_graph())
-        return {"param": num_param, "flops": num_flops}
-
-    mg = model_generator(name = 'sample')
     mg.set_creator(mobilenet_creator.model_creator)
-    mg.set_stats_updater(sample_stat_updater)
+    mg.set_stats_updater(mobilenet_creator.stat_updater)
 
     param_list = []
     stat_list = []
@@ -143,9 +139,11 @@ def main():
                               'depth_multiplier': depth}
                 param_list.append(param)
                 stat_list.append(mg.set_and_stats(param))
-    for i in range(len(param_list)):
-        print(param_list[i])
-        print(stat_list[i])
+    param_fields = ['resolution_multiplier', 'width_multiplier',
+                    'depth_multiplier']
+    stat_fields = ['param','flops','single_thread','multi_thread','file_size']
+    report.write_data_to_csv(param_list, param_fields, 'model_parameters')
+    report.write_data_to_csv(stat_list, stat_fields, 'model_behaviour')
 
 
 if __name__ == "__main__":
