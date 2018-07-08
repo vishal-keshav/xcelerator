@@ -50,6 +50,7 @@ This module is GPLv3 licensed.
 import tensorflow as tf
 import os
 import profile_tf as profiler
+import mobilenet_v1 as mobile
 
 """
 We dont save graph, and assume default graph is
@@ -120,14 +121,8 @@ class model_generator:
         return self.get_model_stats()
 
 def main():
-    def sample_model_creator(param):
-        input = tf.placeholder(tf.float32, [1, param['H'], param['W'], param['D']],
-                    name = 'input_tensor')
-        conv1 = tf.layers.conv2d(inputs=input, filters=param['F'],
-                    kernel_size=[3, 3], activation=tf.nn.relu)
-        pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
-        output = tf.identity(pool1, name="output_tensor")
-        return {'input': input, 'output': output}
+
+    mobilenet_creator = mobile.Model("mobilenet_v1")
 
     def sample_stat_updater():
         num_param = profiler.profile_param(tf.get_default_graph())
@@ -135,17 +130,19 @@ def main():
         return {"param": num_param, "flops": num_flops}
 
     mg = model_generator(name = 'sample')
-    mg.set_creator(sample_model_creator)
+    mg.set_creator(mobilenet_creator.model_creator)
     mg.set_stats_updater(sample_stat_updater)
 
     param_list = []
     stat_list = []
-    for h in [8, 16, 32]:
-        for w in [8, 16, 32]:
-            for f in [16, 32]:
-                temp_param = {'H': h, 'W': w, 'D': 3, 'F': f}
-                param_list.append(temp_param)
-                stat_list.append(mg.set_and_stats(temp_param))
+    for res in [1, 0.858, 0.715, 0.572]:
+        for width in [1, 0.75, 0.5]:
+            for depth in [1, 2]:
+                param = {'resolution_multiplier': res,
+                              'width_multiplier': width,
+                              'depth_multiplier': depth}
+                param_list.append(param)
+                stat_list.append(mg.set_and_stats(param))
     for i in range(len(param_list)):
         print(param_list[i])
         print(stat_list[i])
