@@ -6,6 +6,7 @@ A profiler module to profile:
     * Floating point operations
     * Multiply-accumulate operations
     * Single threaded execution
+    * Multiple thread execution
 
 Memory footprint: Architected model is converted to protocol
 buffer binary, freezed for embedded exections, read from the disk,
@@ -29,6 +30,11 @@ includes computations by all operations (un-parametrized)
 
 Single threaded execution: The model is run on desktop or on mobile
 with single thread configuration, and report the average runtime of
+100 runs along with variance for variability. This uses the tf lite
+profiler for embedded version profiling
+
+Multi threaded execution: The model is run on desktop or on mobile
+with 8 thread configuration, and report the average runtime of
 100 runs along with variance for variability. This uses the tf lite
 profiler for embedded version profiling
 
@@ -170,15 +176,19 @@ def push_tflite(name, device, verbose = True):
             print("FILE NOT PRESENT")
         return
 
-def execute_tflite(name, device, nr_threads = 1, verbose = True):
+def execute_tflite(name, device, nr_threads = 1, verbose = True, nr_runs = 100):
     # More checks are required, but for now, its okay!
     # default_name = mobilenet_v1_1.0_224
     benchmark_file = "/data/local/tmp/label_image"
     image_file = "/data/local/tmp/grace_hopper.bmp"
     label_file = "/data/local/tmp/labels.txt"
     model_file = "/data/local/tmp/" + name +".tflite"
-    exec_command = "." + benchmark_file + " -c 100 -v 1 -i " +  \
-                    image_file + " -l " + label_file + " -m " + \
+    if verbose == True:
+        v = "1"
+    else:
+        v = "0"
+    exec_command = "." + benchmark_file + " -c "+str(nr_runs)" -v "+str(v)+ \
+                    " -i " + image_file + " -l " + label_file + " -m " + \
                     model_file + " -t " + str(nr_threads)
     console_msg = device.Shell(exec_command, timeout_ms=100000)
     if verbose == True:
@@ -200,6 +210,29 @@ def profile_mobile_exec(name, model, graph, nr_threads = 1, verbose = True):
     if verbose == True:
         print(console_out)
         print(formated_out['exec_time'])
+    return formated_out
+
+def profile_mobile_exec_var(name, model, graph, nr_threads = 1, verbose = True):
+    adb_device = connect_to_device(verbose)
+    create_tflite(name, model, graph, verbose)
+    exec_times = np.array([])
+    if adb_device != None:
+        push_tflite(name, adb_device, verbose)
+        for run in range(100):
+            console_out = execute_tflite(name, adb_device, nr_threads, verbose, 1)
+            formated_out = report.format_adb_msg(console_out)
+            exec_time = np.append(exec_time, formated_out['exec_time'])
+        formated_out['exec_time'] = np.mean(exec_time)
+        formated_out['exec_var'] = np.var(exec_time)
+    else:
+        if verbose == True:
+            print("Unable to connect to device.")
+        console_out = None
+
+    if verbose == True:
+        print(console_out)
+        print(formated_out['exec_time'])
+        print(formated_out['exec_var'])
     return formated_out
 
 def adb_test():
