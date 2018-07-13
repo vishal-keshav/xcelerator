@@ -131,9 +131,9 @@ def main():
 
     param_list = []
     stat_list = []
-    for res in [1, 0.858, 0.715, 0.572]:
-        for width in [1, 0.75, 0.5]:
-            for depth in [1, 2]:
+    for res in [1, 0.858]:#, 0.715, 0.572]:
+        for width in [1, 0.75]:#, 0.5]:
+            for depth in [1]:#, 2]:
                 param = {'resolution_multiplier': res,
                               'width_multiplier': width,
                               'depth_multiplier': depth}
@@ -141,10 +141,36 @@ def main():
                 stat_list.append(mg.set_and_stats(param))
     param_fields = ['resolution_multiplier', 'width_multiplier',
                     'depth_multiplier']
-    stat_fields = ['param','flops','single_thread','multi_thread','file_size']
+    stat_fields = ['param','flops','single_thread_mean','single_thread_var',
+                    'multi_thread_mean','multi_thread_var', 'file_size']
     report.write_data_to_csv(param_list, param_fields, 'model_parameters')
     report.write_data_to_csv(stat_list, stat_fields, 'model_behaviour')
+    # Prepare for execution graph plotting
+    x_label = []
+    y_single_mean = []
+    y_multi_mean = []
+    y_single_error = []
+    y_multi_error = []
 
+    def create_label(d):
+        ret = ""
+        for key, value in d.items():
+            if ret=="":
+                ret = str(value)
+            else:
+                ret = ret+"_"+str(value)
+        return ret
+
+    for i in range(len(stat_list)):
+        x_label.append(create_label(param_list[i]))
+        y_single_mean.append(stat_list[i]['single_thread_mean'])
+        y_multi_mean.append(stat_list[i]['multi_thread_mean'])
+        y_single_error.append(stat_list[i]['single_thread_var'])
+        y_multi_error.append(stat_list[i]['multi_thread_var'])
+    name = ['single', 'multi']
+    y_data_mean = [y_single_mean, y_multi_mean]
+    y_data_var = [y_single_error, y_multi_error]
+    report.graph_data_bar(x_label, y_data_mean, y_data_var, name, multi=True)
 
 if __name__ == "__main__":
     main()

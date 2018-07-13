@@ -187,7 +187,7 @@ def execute_tflite(name, device, nr_threads = 1, verbose = True, nr_runs = 100):
         v = "1"
     else:
         v = "0"
-    exec_command = "." + benchmark_file + " -c "+str(nr_runs)" -v "+str(v)+ \
+    exec_command = "." + benchmark_file + " -c "+str(nr_runs)+" -v "+str(v)+ \
                     " -i " + image_file + " -l " + label_file + " -m " + \
                     model_file + " -t " + str(nr_threads)
     console_msg = device.Shell(exec_command, timeout_ms=100000)
@@ -221,9 +221,9 @@ def profile_mobile_exec_var(name, model, graph, nr_threads = 1, verbose = True):
         for run in range(100):
             console_out = execute_tflite(name, adb_device, nr_threads, verbose, 1)
             formated_out = report.format_adb_msg(console_out)
-            exec_time = np.append(exec_time, formated_out['exec_time'])
-        formated_out['exec_time'] = np.mean(exec_time)
-        formated_out['exec_var'] = np.var(exec_time)
+            exec_times = np.append(exec_times, formated_out['exec_time'])
+        formated_out['exec_time'] = np.mean(exec_times)
+        formated_out['exec_var'] = np.std(exec_times)
     else:
         if verbose == True:
             print("Unable to connect to device.")
