@@ -51,6 +51,7 @@ import tensorflow as tf
 import os
 import profile_tf as profiler
 import mobilenet_v1 as mobile
+import squeezenet as squeeze
 import report as report
 
 """
@@ -123,7 +124,7 @@ class model_generator:
 
 def main():
 
-    mobilenet_creator = mobile.Model("mobilenet_v1")
+    """mobilenet_creator = mobile.Model("mobilenet_v1")
     mg = model_generator(name = 'mobilenet_profile')
 
     mg.set_creator(mobilenet_creator.model_creator)
@@ -131,16 +132,41 @@ def main():
 
     param_list = []
     stat_list = []
-    for res in [1, 0.858]:#, 0.715, 0.572]:
-        for width in [1, 0.75]:#, 0.5]:
-            for depth in [1]:#, 2]:
+    for res in [1, 0.858, 0.715, 0.572]:
+        for width in [1, 0.75, 0.5]:
+            for depth in [1, 2]:
                 param = {'resolution_multiplier': res,
                               'width_multiplier': width,
                               'depth_multiplier': depth}
                 param_list.append(param)
                 stat_list.append(mg.set_and_stats(param))
     param_fields = ['resolution_multiplier', 'width_multiplier',
-                    'depth_multiplier']
+                    'depth_multiplier']"""
+
+    squeezenet_creator = squeeze.Model("squeezenet")
+    mg = model_generator(name = 'squeezenet_profile')
+
+    mg.set_creator(squeezenet_creator.model_creator)
+    mg.set_stats_updater(squeezenet_creator.stat_updater)
+
+    param_list = []
+    stat_list = []
+    for base_expand_kernels in [128]:
+        for expansion_increment in [128]:
+            for pct in [0.5]:
+                for freq in [2]:
+                    for SR in [0.125]:
+                        param = {'base_expand': base_expand_kernels,
+                                      'expansion_increment': expansion_increment,
+                                      'expansion_filter_ratio': pct,
+                                      'filter_expansion_freq': freq,
+                                      'squeeze_ratio': SR}
+                        param_list.append(param)
+                        stat_list.append(mg.set_and_stats(param))
+    param_fields = ['base_expand', 'expansion_increment',
+                    'expansion_filter_ratio', 'filter_expansion_freq'
+                    'squeeze_ratio']
+
     stat_fields = ['param','flops','single_thread_mean','single_thread_var',
                     'multi_thread_mean','multi_thread_var', 'file_size']
     report.write_data_to_csv(param_list, param_fields, 'model_parameters')
