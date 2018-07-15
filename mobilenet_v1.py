@@ -52,15 +52,15 @@ class Model:
     def stat_updater(self):
         num_param = profiler.profile_param(tf.get_default_graph())
         num_flops = profiler.profile_flops(tf.get_default_graph())
-        """single_thread = profiler.profile_mobile_exec("mobilenet_v1", self.model,
+        """single_thread = profiler.profile_mobile_exec(self.name, self.model,
                         tf.get_default_graph(), nr_threads = 1, verbose = False)
-        multi_thread = profiler.profile_mobile_exec("mobilenet_v1", self.model,
+        multi_thread = profiler.profile_mobile_exec(self.name, self.model,
                         tf.get_default_graph(), nr_threads = 8, verbose = False)"""
-        single_thread = profiler.profile_mobile_exec_var("mobilenet_v1", self.model,
+        single_thread = profiler.profile_mobile_exec_var(self.name, self.model,
                         tf.get_default_graph(), nr_threads = 1, verbose = False)
-        multi_thread = profiler.profile_mobile_exec_var("mobilenet_v1", self.model,
+        multi_thread = profiler.profile_mobile_exec_var(self.name, self.model,
                         tf.get_default_graph(), nr_threads = 8, verbose = False)
-        file_size = profiler.profile_file_size("mobilenet_v1", verbose = False)
+        file_size = profiler.profile_file_size(self.name, verbose = False)
         return {"param": num_param, "flops": num_flops,
                 "single_thread_mean": single_thread['exec_time'],
                 "single_thread_var": single_thread['exec_var'],
