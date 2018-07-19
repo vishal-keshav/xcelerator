@@ -20,6 +20,7 @@ General guidelines to define an architecture:
 
 Defining shufflenet, with model hyper-parameters like
 filter_group: Number of groupings for shuffling.
+complexity_scale_factor: Determines width of the network
 
 This module is GPLv3 licensed.
 
@@ -76,12 +77,78 @@ class Model:
         shape = tf.stack([-1, h, w, ch])
         out = tf.reshape(out, shape)
         return out
+    # Group convolution
+    def group_conv(self, input, nr_filters, nr_groups, kernel=1, stride=1):
+        in_ch = input.shape.as_list()[3]
+        in_ch_per_group = int(in_ch/nr_groups)
+        filter_per_group = int(nr_filters/ nr_groups)
+        # Create filter weights and split for group conv
+        W_shape = [kernel,kernel, in_ch_per_group, nr_filters]
+        W = tf.get_variable(name = 'kernel', shape = W_shape,
+                dtype = tf.float32, initializer = tf.random_normal())
+        X_splits = tf.split(input, [in_ch_per_group]*nr_groups, axis = 3)
+        W_spilts = tf.split(W, [filter_per_group]*nr_groups, axis = 3)
+        # Apply convolutions on splits and store
+        res = []
+        for i in range(nr_groups):
+            X_temp = X_splits[i]
+            W_temp = W_splits[i]
+            conv_op = tf.nn.conv2d(X_temp, W_temp, [1, stride, stride, 1], 'SAME')
+            res.append(conv_op)
+        return tf.concat(res, 3)
+
+    # Define shufflenet unit
+    def shuffle_unit(self, input, nr_groups=3, stride=1):
+        in_channels = input.shape.as_list()[3]
+        layer = in_channels
+        # Group conv 1
+        layer = self.group_conv(input, in_channels, nr_groups)
+        # No batch norm as of now
+        layer = tf.nn.relu(layer)
+        layer = self.shuffle(layer, nr_groups)
+        # Depthwise conv
+        layer = slim.separable_convolution2d(layer, num_outputs=None,
+                            stride=stride, depth_multiplier=1, kernel_size=[3, 3])
+        # Group conv 2
+        layer = self.group_conv(input, in_channels, nr_groups)
+        if stride >= 2:
+            input = tf.nn.avg_pool(input, [1,3,3,1], [1,2,2,1], 'SAME')
+            layer = tf.concat([layer, input], 3)
+        else:
+            layer = tf.add(layer, input)
+        layer = tf.nn.relu(layer)
+        return layer
+
 
     # Defenition of macro-architecture
     # Defined in terms of all hyper-parameters
     def init_shufflenet(self, param):
         nr_groups = param['nr_groups']
-        ###
-        ##Something something
-        ###
+        out_channel = param['out_channel']
+        complexity = param['complexity_scale_factor']
+        H_W = 224
+        out_channel = int(out_channel*complexity)
+        input = tf.placeholder(tf.float32, [1, H_W, H_W, 3],name='input_tensor')
+        layer = slim.convolution2d(input, 24, kernel_size=[3, 3])
+        layer = tf.layers.max_pooling2d(layer, pool_size = 3,
+                        strides = 2, padding='valid')
+        # Stage 2
+        layer = self.shuffle_unit(layer, nr_groups, first=True)
+        for i in range():
+            layer = self.shuffle_unit(layer, nr_groups)
+        # Stage 3
+        layer = self.shuffle_unit(layer, nr_groups, stride = 2)
+        for i in range():
+            layer = self.shuffle_unit(layer, nr_groups)
+        # Stage 4
+        layer = self.shuffle_unit(layer, nr_groups, stride = 2)
+        for i in range():
+            layer = self.shuffle_unit(layer, nr_groups)
+        # Outputs
+        global_pool = tf.reduce_mean(layer, axis = [1,2])
+        spatial_reduction = tf.squeeze(global_pool, [1, 2], name='SpatialSqueeze')
+        logits = slim.fully_connected(spatial_reduction, 1000,
+                                        activation_fn=None, scope='fc')
+        output = slim.softmax(logits, scope='Predictions')
+        output = tf.identity(output, name="output_tensor")
         return {'input': input, 'output': output, 'logits': global_pool}
