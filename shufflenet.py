@@ -123,7 +123,7 @@ class Model:
     # Defenition of macro-architecture
     # Defined in terms of all hyper-parameters
     def init_shufflenet(self, param):
-        nr_groups = param['nr_groups']
+        nr_groups = param['filter_group']
         out_channel = param['out_channel']
         complexity = param['complexity_scale_factor']
         H_W = 224
