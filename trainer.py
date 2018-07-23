@@ -22,3 +22,56 @@ training is complete or interrupted in an automatic manner.
 
 This module is GPLv3 licensed.
 """
+
+import tensorflow as tf
+import os
+
+"""
+A model trainer encapsulate data, model and
+training parameters.
+It stores the statistics of model training.
+"""
+class model_trainer:
+    def __init__(self, options = None, name = 'default'):
+        self.name = name
+        if options != None:
+            self.nr_param = len(options['parameters'])
+            self.param = options['parameters']
+            self.data = options['data']
+            self.model = options['model']
+            self.train_stats = None
+        else:
+            self.nr_param = None
+            self.param = None
+            self.data = None
+            self.model = None
+            self.train_stats = None
+
+    def set_model(self, model):
+        self.model = model
+
+    def set_train_param(self, param):
+        self.param = param
+
+    def set_train_data(self, data):
+        self.data = data
+
+    def train(self, collect_stats = True):
+        if self.is_training == True:
+            return
+        # Train model on data based on params, in one thread
+        self.is_training = True
+        # Format and save train stats
+        self.train_stats = None
+        self.is_training = False
+
+    def get_stats(self):
+        if self.is_training == False:
+            return self.train_stats
+        else:
+            return None
+
+    def train_and_stats(self):
+        #Train model in this thread
+        self.train()
+        return self.train_stats
