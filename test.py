@@ -29,8 +29,8 @@ def test_mobilenet():
                     'depth_multiplier']
     stat_fields = ['param','flops','single_thread_mean','single_thread_var',
                     'multi_thread_mean','multi_thread_var', 'file_size']
-    report.write_data_to_csv(param_list, param_fields, 'model_parameters')
-    report.write_data_to_csv(stat_list, stat_fields, 'model_behaviour')
+    report.write_data_to_csv(param_list, param_fields, 'model_parameters_mobilenet')
+    report.write_data_to_csv(stat_list, stat_fields, 'model_behaviour_mobilenet')
     # Prepare for execution graph plotting
     x_label = []
     y_single_mean = []
@@ -80,13 +80,15 @@ def test_squeezenet():
                         param_list.append(param)
                         stat_list.append(mg.set_and_stats(param))
     param_fields = ['base_expand', 'expansion_increment',
-                    'expansion_filter_ratio', 'filter_expansion_freq'
+                    'expansion_filter_ratio', 'filter_expansion_freq',
                     'squeeze_ratio']
 
     stat_fields = ['param','flops','single_thread_mean','single_thread_var',
                     'multi_thread_mean','multi_thread_var', 'file_size']
-    report.write_data_to_csv(param_list, param_fields, 'model_parameters')
-    report.write_data_to_csv(stat_list, stat_fields, 'model_behaviour')
+    #stat_fields = ['param','flops','single_thread_mean',
+    #                'multi_thread_mean', 'file_size']
+    report.write_data_to_csv(param_list, param_fields, 'model_parameters_squeezenet')
+    report.write_data_to_csv(stat_list, stat_fields, 'model_behaviour_squeezenet')
     # Prepare for execution graph plotting
     x_label = []
     y_single_mean = []
@@ -125,19 +127,21 @@ def test_shufflenet():
     out_ch_map = {1: 144, 2: 200, 3: 240, 4: 272, 8:384}
     param_list = []
     stat_list = []
-    for filter_group in [1,2,3,4,8]:
-        for complexity_scale_factor in [0.25, 0.5, 1.0]:
+    for filter_group in [1]:#,2,3,4,8]:
+        for complexity_scale_factor in [0.25]:#, 0.5, 1.0]:
             param = {'filter_group': filter_group,
                     'complexity_scale_factor': complexity_scale_factor,
                     'out_channel': out_ch_map[filter_group]}
             param_list.append(param)
             stat_list.append(mg.set_and_stats(param))
-    param_fields = ['filter_group', 'complexity_scale_factor']
+    param_fields = ['filter_group', 'complexity_scale_factor', 'out_channel']
 
     stat_fields = ['param','flops','single_thread_mean','single_thread_var',
                     'multi_thread_mean','multi_thread_var', 'file_size']
-    report.write_data_to_csv(param_list, param_fields, 'model_parameters')
-    report.write_data_to_csv(stat_list, stat_fields, 'model_behaviour')
+    """stat_fields = ['param','flops','single_thread_mean',
+                    'multi_thread_mean', 'file_size']"""
+    report.write_data_to_csv(param_list, param_fields, 'model_parameters_shufflenet')
+    report.write_data_to_csv(stat_list, stat_fields, 'model_behaviour_shufflenet')
     # Prepare for execution graph plotting
     x_label = []
     y_single_mean = []
@@ -166,8 +170,8 @@ def test_shufflenet():
     report.graph_data_bar(x_label, y_data_mean, y_data_var, name, multi=True)
 
 def main():
-    test_mobilenet()
-    #test_squeezenet()
+    #test_mobilenet()
+    test_squeezenet()
     #test_shufflenet()
 
 

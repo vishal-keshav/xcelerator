@@ -1,3 +1,6 @@
 /MNIST_data
 *.pyc
 *.gz
+*.tflite
+*.csv
+*.html

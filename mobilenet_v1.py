@@ -98,7 +98,7 @@ class Model:
             input_dim = param['input_dim']
         else:
             H_W = int(224*resolution_multiplier)
-            input_dim = [1, 224, 224, 3]
+            input_dim = [1, H_W, H_W, 3]
 
         if 'output_dim' in param:
             out_dim = param['output_dim']

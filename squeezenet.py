@@ -54,14 +54,14 @@ class Model:
     def stat_updater(self):
         num_param = profiler.profile_param(tf.get_default_graph())
         num_flops = profiler.profile_flops(tf.get_default_graph())
-        single_thread = profiler.profile_mobile_exec(self.name, self.model,
+        """single_thread = profiler.profile_mobile_exec(self.name, self.model,
                         tf.get_default_graph(), nr_threads = 1, verbose = False)
         multi_thread = profiler.profile_mobile_exec(self.name, self.model,
-                        tf.get_default_graph(), nr_threads = 8, verbose = False)
-        """single_thread = profiler.profile_mobile_exec_var(self.name, self.model,
+                        tf.get_default_graph(), nr_threads = 8, verbose = False)"""
+        single_thread = profiler.profile_mobile_exec_var(self.name, self.model,
                         tf.get_default_graph(), nr_threads = 1, verbose = False)
         multi_thread = profiler.profile_mobile_exec_var(self.name, self.model,
-                        tf.get_default_graph(), nr_threads = 8, verbose = False)"""
+                        tf.get_default_graph(), nr_threads = 8, verbose = False)
         file_size = profiler.profile_file_size(self.name, verbose = False)
         return {"param": num_param, "flops": num_flops,
                 "single_thread_mean": single_thread['exec_time'],
@@ -91,11 +91,21 @@ class Model:
         freq = param['filter_expansion_freq']
         SR = param['squeeze_ratio']
 
+        if 'input_dim' in param:
+            input_dim = param['input_dim']
+        else:
+            H_W = 224
+            input_dim = [1, 224, 224, 3]
+
+        if 'output_dim' in param:
+            out_dim = param['output_dim']
+        else:
+            out_dim = 1000
+
         # Some initialization for structuring
         max_pooling_index = [2, 6]
-        H_W = 224
         nr_filter_first_layer = 96
-        input = tf.placeholder(tf.float32, [1, H_W, H_W, 3],name='input_tensor')
+        input = tf.placeholder(tf.float32, input_dim, name='input_tensor')
 
         layer_1_conv = slim.convolution2d(input, nr_filter_first_layer,
                         [3, 3], stride=2, padding='SAME', scope='conv_1')
@@ -111,7 +121,7 @@ class Model:
             if i in max_pooling_index:
                 temp_layer = tf.layers.max_pooling2d(temp_layer, pool_size = 3,
                                 strides = 2, padding='valid',name='pool_' + str(i))
-        layer_9_conv = slim.convolution2d(temp_layer, 1000, [1,1],
+        layer_9_conv = slim.convolution2d(temp_layer, out_dim, [1,1],
                         stride=2, padding='VALID', scope='conv_9')
         global_pool = slim.avg_pool2d(layer_9_conv, 3, 1, 'VALID')
         output = slim.softmax(global_pool, scope='Predictions')

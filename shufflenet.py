@@ -51,20 +51,20 @@ class Model:
     def stat_updater(self):
         num_param = profiler.profile_param(tf.get_default_graph())
         num_flops = profiler.profile_flops(tf.get_default_graph())
-        single_thread = profiler.profile_mobile_exec(self.name, self.model,
+        """single_thread = profiler.profile_mobile_exec(self.name, self.model,
                         tf.get_default_graph(), nr_threads = 1, verbose = False)
         multi_thread = profiler.profile_mobile_exec(self.name, self.model,
-                        tf.get_default_graph(), nr_threads = 8, verbose = False)
-        """single_thread = profiler.profile_mobile_exec_var(self.name, self.model,
+                        tf.get_default_graph(), nr_threads = 8, verbose = False)"""
+        single_thread = profiler.profile_mobile_exec_var(self.name, self.model,
                         tf.get_default_graph(), nr_threads = 1, verbose = False)
         multi_thread = profiler.profile_mobile_exec_var(self.name, self.model,
-                        tf.get_default_graph(), nr_threads = 8, verbose = False)"""
+                        tf.get_default_graph(), nr_threads = 8, verbose = False)
         file_size = profiler.profile_file_size(self.name, verbose = False)
         return {"param": num_param, "flops": num_flops,
                 "single_thread_mean": single_thread['exec_time'],
-                "single_thread_var": single_thread['exec_var'],
+                #"single_thread_var": single_thread['exec_var'],
                 "multi_thread_mean": multi_thread['exec_time'],
-                "multi_thread_var": multi_thread['exec_var'],
+                #"multi_thread_var": multi_thread['exec_var'],
                 "file_size": file_size}
 
     # Defenition of micro-architecture (shuffeling)
@@ -126,9 +126,20 @@ class Model:
         nr_groups = param['filter_group']
         out_channel = param['out_channel']
         complexity = param['complexity_scale_factor']
-        H_W = 224
+
+        if 'input_dim' in param:
+            input_dim = param['input_dim']
+        else:
+            H_W = 224
+            input_dim = [1, 224, 224, 3]
+
+        if 'output_dim' in param:
+            out_dim = param['output_dim']
+        else:
+            out_dim = 1000
+
         out_channel = int(out_channel*complexity)
-        input = tf.placeholder(tf.float32, [1, H_W, H_W, 3],name='input_tensor')
+        input = tf.placeholder(tf.float32, input_dim, name='input_tensor')
         layer = slim.convolution2d(input, 24, kernel_size=[3, 3])
         layer = tf.layers.max_pooling2d(layer, pool_size = 3,
                         strides = 2, padding='valid')
@@ -147,7 +158,7 @@ class Model:
         # Outputs
         global_pool = tf.reduce_mean(layer, axis = [1,2])
         spatial_reduction = tf.squeeze(global_pool, [1, 2], name='SpatialSqueeze')
-        logits = slim.fully_connected(spatial_reduction, 1000,
+        logits = slim.fully_connected(spatial_reduction, out_dim,
                                         activation_fn=None, scope='fc')
         output = slim.softmax(logits, scope='Predictions')
         output = tf.identity(output, name="output_tensor")
