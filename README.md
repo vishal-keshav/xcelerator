@@ -1,6 +1,8 @@
 # xcelerator
+Will be updated soon...
 
-Describe high level descriptions of module
+Please refer to module documentation in module related files.
+For any other details, contact: bulletcross@gmail.com
 
 ### profile_tf
 
