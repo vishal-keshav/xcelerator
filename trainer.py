@@ -24,12 +24,11 @@ This module is GPLv3 licensed.
 """
 
 import tensorflow as tf
-from tensorflow.examples.tutorials.mnist import input_data
 import os
 # No threading as of now
 #import threading
 #import time
-
+import data_provider_mnist as dt
 import mobilenet_v1 as mobile
 
 """
@@ -80,21 +79,19 @@ class model_trainer:
 
         sess.run(tf.global_variables_initializer())
         mnist_data = self.data
+        mnist_data.set_batch_size(batch_size)
         for i in range(nr_iteration):
-            data = mnist_data.train.next_batch(batch_size)
-            batch_img = tf.reshape(data[0], [-1, 28, 28, 1])
-            resized_batch_img = sess.run(tf.image.resize_images(batch_img, [224, 224]))
+            train_data = mnist_data.get_train_batch()
             if i%2 == 0:
                 train_accuracy = accuracy.eval(
-                        feed_dict={x:resized_batch_img, y_: data[1]})
+                        feed_dict={x:train_data[0], y_: train_data[1]})
                 print("step %d, training accuracy %g"%(i, train_accuracy))
-            train_step.run(feed_dict={x: resized_batch_img, y_: data[1]})
+            train_step.run(feed_dict={x: train_data[0], y_: train_data[1]})
         # Evaluating the training accuracy
-        test_data_img =  tf.reshape(mnist_data.test.images[0:32], [-1, 28, 28, 1])
-        resized_test_img = sess.run(tf.image.resize_images(test_data_img, [224, 224]))
+        test_data = mnist_data.get_test_batch()
         self.train_stats = accuracy.eval(
-            feed_dict={ x: resized_test_img,
-                y_: mnist_data.test.labels[0:32]})
+            feed_dict={ x: test_data[0],
+                y_: test_data[1]})
 
     def get_stats(self):
         return self.train_stats
@@ -114,9 +111,9 @@ def main():
     print(model['input'].get_shape())
     print(model['output'].get_shape())
     # 2. Describe a data set on which model is needed to be trained
-    mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
+    mnist = dt.data_provider('mnist')
     # 3. Create a trainer, inputing model and data, with one setting
-    train_param = {'lr': 0.001, 'batch_size': 32, 'iter': 10}
+    train_param = {'lr': 0.0001, 'batch_size': 32, 'iter': 10}
     options = {'parameters': train_param, 'data': mnist, 'model': model}
     mt = model_trainer(options,name = 'mobilenet_mnist_trainer')
     # 4. Start training, print out the train stats
