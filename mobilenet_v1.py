@@ -94,10 +94,21 @@ class Model:
         width_multiplier = param['width_multiplier']
         depth_multiplier = param['depth_multiplier']
 
+        if 'input_dim' in param:
+            input_dim = param['input_dim']
+        else:
+            H_W = int(224*resolution_multiplier)
+            input_dim = [1, 224, 224, 3]
+
+        if 'output_dim' in param:
+            out_dim = param['output_dim']
+        else:
+            out_dim = 1000
+
         # Define the resolution based on resolution multiplier
         # [1, 0.858, 0.715, 0.572 ] = [224, 192, 160, 128]
-        H_W = int(224*resolution_multiplier)
-        input = tf.placeholder(tf.float32, [None, H_W, H_W, 1],name='input_tensor')
+
+        input = tf.placeholder(tf.float32, input_dim, name='input_tensor')
         layer_1_conv = slim.convolution2d(input, round(32 * width_multiplier),
                         [3, 3], stride=2, padding='SAME', scope='conv_1')
         #layer_1_bn = slim.batch_norm(layer_1_conv, scope='conv_1/batch_norm')
@@ -126,7 +137,7 @@ class Model:
         global_pool = tf.reduce_mean(layer_14_dw, [1, 2], keep_dims=True,
                                         name='global_pool')
         spatial_reduction = tf.squeeze(global_pool, [1, 2], name='SpatialSqueeze')
-        logits = slim.fully_connected(spatial_reduction, 10,
+        logits = slim.fully_connected(spatial_reduction, out_dim,
                                         activation_fn=None, scope='fc_16')
         output = slim.softmax(logits, scope='Predictions')
         output = tf.identity(output, name="output_tensor")

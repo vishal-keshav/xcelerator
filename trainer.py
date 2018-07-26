@@ -106,7 +106,9 @@ def main():
     mobilenet_creator = mobile.Model("mobilenet_v1")
     param = {'resolution_multiplier': 1,
                   'width_multiplier': 1,
-                  'depth_multiplier': 1}
+                  'depth_multiplier': 1,
+                  'input_dim': [None, 224, 224, 1],
+                  'output_dim': 10}
     model = mobilenet_creator.model_creator(param)
     print(model['input'].get_shape())
     print(model['output'].get_shape())
