@@ -97,7 +97,7 @@ class Model:
         # Define the resolution based on resolution multiplier
         # [1, 0.858, 0.715, 0.572 ] = [224, 192, 160, 128]
         H_W = int(224*resolution_multiplier)
-        input = tf.placeholder(tf.float32, [1, H_W, H_W, 3],name='input_tensor')
+        input = tf.placeholder(tf.float32, [None, H_W, H_W, 1],name='input_tensor')
         layer_1_conv = slim.convolution2d(input, round(32 * width_multiplier),
                         [3, 3], stride=2, padding='SAME', scope='conv_1')
         #layer_1_bn = slim.batch_norm(layer_1_conv, scope='conv_1/batch_norm')
@@ -126,7 +126,7 @@ class Model:
         global_pool = tf.reduce_mean(layer_14_dw, [1, 2], keep_dims=True,
                                         name='global_pool')
         spatial_reduction = tf.squeeze(global_pool, [1, 2], name='SpatialSqueeze')
-        logits = slim.fully_connected(spatial_reduction, 1000,
+        logits = slim.fully_connected(spatial_reduction, 10,
                                         activation_fn=None, scope='fc_16')
         output = slim.softmax(logits, scope='Predictions')
         output = tf.identity(output, name="output_tensor")

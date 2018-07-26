@@ -26,8 +26,11 @@ This module is GPLv3 licensed.
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 import os
-import threading
-import time
+# No threading as of now
+#import threading
+#import time
+
+import mobilenet_v1 as mobile
 
 """
 A model trainer encapsulate data, model and
@@ -60,37 +63,65 @@ class model_trainer:
         self.data = data
 
     def train(self, collect_stats = True):
-        if self.is_training == True:
-            return
+        sess = tf.InteractiveSession()
+        x = self.model['input']
+        y_ = tf.placeholder(tf.float32, shape=[None, 10])
+        out = self.model['logits']# We just need this
 
-        sess = tf.Session()
-        y = self.model['output_tensor']
-        y_ = tf.placeholder(tf.float32, shape=?)
-        cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y, y_))
-        train_op = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
-        # For stats
-        correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
+        lr = self.param['lr']
+        batch_size = self.param['batch_size']
+        nr_iteration = self.param['iter']
+        # Create backprop algorithm, based on params
+        cross_entropy = tf.reduce_mean(
+            tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=out))
+        train_step = tf.train.AdamOptimizer(lr).minimize(cross_entropy)
+        correct_prediction = tf.equal(tf.argmax(out,1), tf.argmax(y_,1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        # Train script
-        # Train model on data based on params, in one thread
-        def training_func():
-            while True:
-                batch = mnist.train.next_batch(100)
-                global_step_val,_ = sess.run([global_step, train_step], feed_dict={x: batch[0], y_: batch[1]})
-                print("global step: %d" % global_step_val)
-        threading.Thread(target=training_func).start()
-        self.is_training = True
-        # Format and save train stats based on accuracy data
-        self.train_stats = None
-        self.is_training = False
+
+        sess.run(tf.global_variables_initializer())
+        mnist_data = self.data
+        for i in range(nr_iteration):
+            data = mnist_data.train.next_batch(batch_size)
+            batch_img = tf.reshape(data[0], [-1, 28, 28, 1])
+            resized_batch_img = sess.run(tf.image.resize_images(batch_img, [224, 224]))
+            if i%2 == 0:
+                train_accuracy = accuracy.eval(
+                        feed_dict={x:resized_batch_img, y_: data[1]})
+                print("step %d, training accuracy %g"%(i, train_accuracy))
+            train_step.run(feed_dict={x: resized_batch_img, y_: data[1]})
+        # Evaluating the training accuracy
+        test_data_img =  tf.reshape(mnist_data.test.images[0:32], [-1, 28, 28, 1])
+        resized_test_img = sess.run(tf.image.resize_images(test_data_img, [224, 224]))
+        self.train_stats = accuracy.eval(
+            feed_dict={ x: resized_test_img,
+                y_: mnist_data.test.labels[0:32]})
 
     def get_stats(self):
-        if self.is_training == False:
-            return self.train_stats
-        else:
-            return None
+        return self.train_stats
 
     def train_and_stats(self):
-        #Train model in this thread
         self.train()
         return self.train_stats
+
+def main():
+    # This a testing script which does following:
+    # 1. Import a model(mobile_net) with one set model settings
+    mobilenet_creator = mobile.Model("mobilenet_v1")
+    param = {'resolution_multiplier': 1,
+                  'width_multiplier': 1,
+                  'depth_multiplier': 1}
+    model = mobilenet_creator.model_creator(param)
+    print(model['input'].get_shape())
+    print(model['output'].get_shape())
+    # 2. Describe a data set on which model is needed to be trained
+    mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
+    # 3. Create a trainer, inputing model and data, with one setting
+    train_param = {'lr': 0.001, 'batch_size': 32, 'iter': 10}
+    options = {'parameters': train_param, 'data': mnist, 'model': model}
+    mt = model_trainer(options,name = 'mobilenet_mnist_trainer')
+    # 4. Start training, print out the train stats
+    print(mt.train_and_stats())
+
+
+if __name__== "__main__":
+    main()
