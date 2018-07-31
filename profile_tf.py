@@ -207,6 +207,8 @@ def profile_mobile_exec(name, model, graph, nr_threads = 1, verbose = True):
             print("Unable to connect to device.")
         console_out = None
     formated_out = report.format_adb_msg(console_out)
+    #Addition of var is just for consistency between outputs of functions
+    formated_out['exec_var'] = 0 #Later can be changed
     if verbose == True:
         print(console_out)
         print(formated_out['exec_time'])

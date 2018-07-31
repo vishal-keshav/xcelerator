@@ -48,23 +48,25 @@ class Model:
 
     # Stat updator returns the model exec time and other visible param
     # important for deployment
-    def stat_updater(self):
+    def stat_updater(self, variance = False):
         num_param = profiler.profile_param(tf.get_default_graph())
         num_flops = profiler.profile_flops(tf.get_default_graph())
-        """single_thread = profiler.profile_mobile_exec(self.name, self.model,
-                        tf.get_default_graph(), nr_threads = 1, verbose = False)
-        multi_thread = profiler.profile_mobile_exec(self.name, self.model,
-                        tf.get_default_graph(), nr_threads = 8, verbose = False)"""
-        single_thread = profiler.profile_mobile_exec_var(self.name, self.model,
-                        tf.get_default_graph(), nr_threads = 1, verbose = False)
-        multi_thread = profiler.profile_mobile_exec_var(self.name, self.model,
-                        tf.get_default_graph(), nr_threads = 8, verbose = False)
+        if variance == False:
+            single_thread = profiler.profile_mobile_exec(self.name, self.model,
+                tf.get_default_graph(), nr_threads = 1, verbose = False)
+            multi_thread = profiler.profile_mobile_exec(self.name, self.model,
+                tf.get_default_graph(), nr_threads = 8, verbose = False)
+        else:
+            single_thread = profiler.profile_mobile_exec_var(self.name, self.model,
+                tf.get_default_graph(), nr_threads = 1, verbose = False)
+            multi_thread = profiler.profile_mobile_exec_var(self.name, self.model,
+                tf.get_default_graph(), nr_threads = 8, verbose = False)
         file_size = profiler.profile_file_size(self.name, verbose = False)
         return {"param": num_param, "flops": num_flops,
                 "single_thread_mean": single_thread['exec_time'],
-                #"single_thread_var": single_thread['exec_var'],
+                "single_thread_var": single_thread['exec_var'],
                 "multi_thread_mean": multi_thread['exec_time'],
-                #"multi_thread_var": multi_thread['exec_var'],
+                "multi_thread_var": multi_thread['exec_var'],
                 "file_size": file_size}
 
     # Defenition of micro-architecture (shuffeling)
