@@ -85,8 +85,7 @@ def test_squeezenet():
 
     stat_fields = ['param','flops','single_thread_mean','single_thread_var',
                     'multi_thread_mean','multi_thread_var', 'file_size']
-    #stat_fields = ['param','flops','single_thread_mean',
-    #                'multi_thread_mean', 'file_size']
+
     report.write_data_to_csv(param_list, param_fields, 'model_parameters_squeezenet')
     report.write_data_to_csv(stat_list, stat_fields, 'model_behaviour_squeezenet')
     # Prepare for execution graph plotting
@@ -138,8 +137,7 @@ def test_shufflenet():
 
     stat_fields = ['param','flops','single_thread_mean','single_thread_var',
                     'multi_thread_mean','multi_thread_var', 'file_size']
-    """stat_fields = ['param','flops','single_thread_mean',
-                    'multi_thread_mean', 'file_size']"""
+                    
     report.write_data_to_csv(param_list, param_fields, 'model_parameters_shufflenet')
     report.write_data_to_csv(stat_list, stat_fields, 'model_behaviour_shufflenet')
     # Prepare for execution graph plotting
@@ -171,8 +169,8 @@ def test_shufflenet():
 
 def main():
     #test_mobilenet()
-    test_squeezenet()
-    #test_shufflenet()
+    #test_squeezenet()
+    test_shufflenet()
 
 
 if __name__ == "__main__":

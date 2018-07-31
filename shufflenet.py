@@ -30,6 +30,8 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import profile_tf as profiler
 
+import math
+
 class Model:
     def __init__(self, name):
         print("Initializing " + name)
@@ -43,7 +45,7 @@ class Model:
 
     def model_creator(self, param):
         if self.name == 'shufflenet':
-            self.model = self.init_squeezenet(param)
+            self.model = self.init_shufflenet(param)
             return self.model
 
     # Stat updator returns the model exec time and other visible param
@@ -80,16 +82,18 @@ class Model:
         out = tf.reshape(out, shape)
         return out
     # Group convolution
-    def group_conv(self, input, nr_filters, nr_groups, kernel=1, stride=1):
+    def group_conv(self, g_name, input, nr_filters, nr_groups, kernel=1, stride=1):
         in_ch = input.shape.as_list()[3]
         in_ch_per_group = int(in_ch/nr_groups)
         filter_per_group = int(nr_filters/ nr_groups)
+        maxval = math.sqrt(6.0/in_ch_per_group)
         # Create filter weights and split for group conv
         W_shape = [kernel,kernel, in_ch_per_group, nr_filters]
-        W = tf.get_variable(name = 'kernel', shape = W_shape,
-                dtype = tf.float32, initializer = tf.random_normal())
+        W = tf.get_variable(name = g_name + '_weight', shape = W_shape,
+                dtype = tf.float32,
+                initializer = tf.random_uniform_initializer(-maxval, maxval))
         X_splits = tf.split(input, [in_ch_per_group]*nr_groups, axis = 3)
-        W_spilts = tf.split(W, [filter_per_group]*nr_groups, axis = 3)
+        W_splits = tf.split(W, [filter_per_group]*nr_groups, axis = 3)
         # Apply convolutions on splits and store
         res = []
         for i in range(nr_groups):
@@ -100,11 +104,14 @@ class Model:
         return tf.concat(res, 3)
 
     # Define shufflenet unit
-    def shuffle_unit(self, input, nr_groups=3, stride=1):
+    def shuffle_unit(self, input, nr_groups=3, stride=1, first_block = False):
         in_channels = input.shape.as_list()[3]
         layer = in_channels
         # Group conv 1
-        layer = self.group_conv(input, in_channels, nr_groups)
+        if first_block:
+            layer = self.group_conv('g1', input, in_channels, 1)
+        else:
+            layer = self.group_conv('g2', input, in_channels, nr_groups)
         # No batch norm as of now
         layer = tf.nn.relu(layer)
         layer = self.shuffle(layer, nr_groups)
@@ -112,7 +119,7 @@ class Model:
         layer = slim.separable_convolution2d(layer, num_outputs=None,
                             stride=stride, depth_multiplier=1, kernel_size=[3, 3])
         # Group conv 2
-        layer = self.group_conv(input, in_channels, nr_groups)
+        layer = self.group_conv('g3', input, in_channels, nr_groups)
         if stride >= 2:
             input = tf.nn.avg_pool(input, [1,3,3,1], [1,2,2,1], 'SAME')
             layer = tf.concat([layer, input], 3)
@@ -120,7 +127,6 @@ class Model:
             layer = tf.add(layer, input)
         layer = tf.nn.relu(layer)
         return layer
-
 
     # Defenition of macro-architecture
     # Defined in terms of all hyper-parameters
@@ -141,22 +147,32 @@ class Model:
             out_dim = 1000
 
         out_channel = int(out_channel*complexity)
-        input = tf.placeholder(tf.float32, input_dim, name='input_tensor')
-        layer = slim.convolution2d(input, 24, kernel_size=[3, 3])
-        layer = tf.layers.max_pooling2d(layer, pool_size = 3,
-                        strides = 2, padding='valid')
+        with tf.variable_scope('stage1'):
+            input = tf.placeholder(tf.float32, input_dim, name='input_tensor')
+            layer = slim.convolution2d(input, 24, kernel_size=[3, 3])
+            layer = tf.layers.max_pooling2d(layer, pool_size = 3,
+                            strides = 2, padding='valid')
         # Stage 2
-        layer = self.shuffle_unit(layer, nr_groups, first=True)
-        for i in range():
-            layer = self.shuffle_unit(layer, nr_groups)
+        with tf.variable_scope('stage2'):
+            with tf.variable_scope('stage2_layer1'):
+                layer = self.shuffle_unit(layer, nr_groups, stride=2, first_block = True)
+            for i in range(1):
+                with tf.variable_scope('stage2_' + str(i)):
+                    layer = self.shuffle_unit(layer, nr_groups, stride=1, first_block = False)
         # Stage 3
-        layer = self.shuffle_unit(layer, nr_groups, stride = 2)
-        for i in range():
-            layer = self.shuffle_unit(layer, nr_groups)
+        with tf.variable_scope('stage3'):
+            with tf.variable_scope('stage3_layer1'):
+                layer = self.shuffle_unit(layer, nr_groups, stride = 2, first_block = False)
+            for i in range(3):
+                with tf.variable_scope('stage3_'+str(i)):
+                    layer = self.shuffle_unit(layer, nr_groups, stride=1, first_block = False)
         # Stage 4
-        layer = self.shuffle_unit(layer, nr_groups, stride = 2)
-        for i in range():
-            layer = self.shuffle_unit(layer, nr_groups)
+        with tf.variable_scope('stage4'):
+            with tf.variable_scope('stage4_layer1'):
+                layer = self.shuffle_unit(layer, nr_groups, stride = 2, first_block = False)
+            for i in range(1):
+                with tf.variable_scope('stage4_' + str(i)):
+                    layer = self.shuffle_unit(layer, nr_groups, stride=1, first_block = False)
         # Outputs
         global_pool = tf.reduce_mean(layer, axis = [1,2])
         spatial_reduction = tf.squeeze(global_pool, [1, 2], name='SpatialSqueeze')
