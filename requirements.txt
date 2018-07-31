@@ -1,0 +1,5 @@
+tensorflow
+rsa
+PycryptoDome
+adb
+plotly
