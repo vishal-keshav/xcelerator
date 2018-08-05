@@ -21,7 +21,11 @@ back to the disc.
 
 This module is GPLv3 licensed.
 """
-
+import tensorflow as tf
+import os
+import numpy as np
+import trainer as tr
+import explorer as ex
 # Environment class
 class environment:
     """
@@ -170,6 +174,12 @@ def main():
     [TO-DO]
     env.set_simulation(fn)
     """
+    #def simulate(action_vector):
+    #    reward = 0
+    #    observation = current_observation
+    #    new_state = convert_action_to_state()
+    #    ...
+
     param = {'learning_rate': 0.001, 'gamma': 0.5}
     learning_step = 32
     input_shape = [env.get_observation_shape()]
