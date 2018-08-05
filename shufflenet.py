@@ -104,14 +104,13 @@ class Model:
         return tf.concat(res, 3)
 
     # Define shufflenet unit
-    def shuffle_unit(self, input, nr_groups=3, stride=1, first_block = False):
+    def shuffle_unit(self, input, name, nr_groups=3, stride=1, first_block = False):
         in_channels = input.shape.as_list()[3]
-        layer = in_channels
         # Group conv 1
         if first_block:
-            layer = self.group_conv('g1', input, in_channels, 1)
+            layer = self.group_conv('g1'+name, input, in_channels, 1)
         else:
-            layer = self.group_conv('g2', input, in_channels, nr_groups)
+            layer = self.group_conv('g2'+name, input, in_channels, nr_groups)
         # No batch norm as of now
         layer = tf.nn.relu(layer)
         layer = self.shuffle(layer, nr_groups)
@@ -119,7 +118,7 @@ class Model:
         layer = slim.separable_convolution2d(layer, num_outputs=None,
                             stride=stride, depth_multiplier=1, kernel_size=[3, 3])
         # Group conv 2
-        layer = self.group_conv('g3', input, in_channels, nr_groups)
+        layer = self.group_conv('g3'+name, input, in_channels, nr_groups)
         if stride >= 2:
             input = tf.nn.avg_pool(input, [1,3,3,1], [1,2,2,1], 'SAME')
             layer = tf.concat([layer, input], 3)
@@ -153,30 +152,37 @@ class Model:
             layer = tf.layers.max_pooling2d(layer, pool_size = 3,
                             strides = 2, padding='valid')
         # Stage 2
+        scope_name = ''
         with tf.variable_scope('stage2'):
-            with tf.variable_scope('stage2_layer1'):
-                layer = self.shuffle_unit(layer, nr_groups, stride=2, first_block = True)
+            scope_name = 'stage2_layer1'
+            with tf.variable_scope(scope_name):
+                layer = self.shuffle_unit(layer, scope_name,nr_groups, stride=1, first_block = False)
             for i in range(1):
-                with tf.variable_scope('stage2_' + str(i)):
-                    layer = self.shuffle_unit(layer, nr_groups, stride=1, first_block = False)
+                scope_name = 'stage2_'+str(i)
+                with tf.variable_scope(scope_name):
+                    layer = self.shuffle_unit(layer, scope_name, nr_groups, stride=1, first_block = False)
         # Stage 3
         with tf.variable_scope('stage3'):
-            with tf.variable_scope('stage3_layer1'):
-                layer = self.shuffle_unit(layer, nr_groups, stride = 2, first_block = False)
+            scope_name = 'stage3_layer1'
+            with tf.variable_scope(scope_name):
+                layer = self.shuffle_unit(layer,scope_name,nr_groups, stride = 1, first_block = False)
             for i in range(3):
-                with tf.variable_scope('stage3_'+str(i)):
-                    layer = self.shuffle_unit(layer, nr_groups, stride=1, first_block = False)
+                scope_name = 'stage3_'+str(i)
+                with tf.variable_scope(scope_name):
+                    layer = self.shuffle_unit(layer,scope_name,nr_groups, stride=1, first_block = False)
         # Stage 4
         with tf.variable_scope('stage4'):
-            with tf.variable_scope('stage4_layer1'):
-                layer = self.shuffle_unit(layer, nr_groups, stride = 2, first_block = False)
+            scope_name = 'stage4_layer1'
+            with tf.variable_scope(scope_name):
+                layer = self.shuffle_unit(layer, scope_name, nr_groups, stride = 1, first_block = False)
             for i in range(1):
-                with tf.variable_scope('stage4_' + str(i)):
-                    layer = self.shuffle_unit(layer, nr_groups, stride=1, first_block = False)
+                scope_name = 'stage4_'+str(i)
+                with tf.variable_scope(scope_name):
+                    layer = self.shuffle_unit(layer, scope_name, nr_groups, stride=1, first_block = False)
         # Outputs
         global_pool = tf.reduce_mean(layer, axis = [1,2])
-        spatial_reduction = tf.squeeze(global_pool, [1, 2], name='SpatialSqueeze')
-        logits = slim.fully_connected(spatial_reduction, out_dim,
+        #spatial_reduction = tf.squeeze(global_pool, [1, 2], name='SpatialSqueeze')
+        logits = slim.fully_connected(global_pool, out_dim,
                                         activation_fn=None, scope='fc')
         output = slim.softmax(logits, scope='Predictions')
         output = tf.identity(output, name="output_tensor")
